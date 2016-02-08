@@ -71,7 +71,7 @@ extern "C" {
     return NULL;
   }
 
-  int theos_gmk_setup()
+  int buildkit_gmk_setup()
   {
     gmk_add_function("build_code",
 		     (gmk_func_ptr)generate_project, 1, (unsigned int)1, 1);
