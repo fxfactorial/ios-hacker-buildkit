@@ -11,9 +11,12 @@
 #include <folly/FileUtil.h>
 
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/io.hpp>
 
 namespace logos
 {
@@ -38,17 +41,26 @@ namespace logos
       using qi::lexeme;
       using ascii::char_;
 
-      quoted_string %= lexeme['"' >> +(char_ - '"') >> '"'];
+      // Need to do a *(method_parse rule)
+      // quoted_string %= lexeme['"' >> +(char_ - '"') >> '"'];
+      hooked_class %= lexeme[+(char_("a-zA-Z") - '-')];
+      method_sig %= lexeme[+(char_) - '{'];
+      method_body %= lexeme[+(char_ - '}')];
 
       start %=
 	lit("%hook")
-	>>  *(char_)
-	>> '-'
+	>> hooked_class
+	>> method_sig
+	>> '{'
+	>> method_body
+	>> lit("%end")
 	;
 
     }
-    qi::rule<Iterator, std::string(), ascii::space_type> quoted_string;
-    qi::rule<Iterator, class_hook_parser(), ascii::space_type> start;
+    qi::rule<Iterator, std::string(), ascii::space_type> hooked_class;
+    qi::rule<Iterator, std::string(), ascii::space_type> method_sig;
+    qi::rule<Iterator, std::string(), ascii::space_type> method_body;
+    qi::rule<Iterator, class_hook(), ascii::space_type> start;
 
   };
 
@@ -60,6 +72,9 @@ BOOST_FUSION_ADAPT_STRUCT(logos::class_hook,
 			  (std::string, method_body))
 
 namespace buildkit {
+
+  typedef std::string::const_iterator iterator_type;
+  typedef logos::class_hook_parser<iterator_type> class_hook_parser;
 
   namespace impl {
     folly::dynamic project_spec = nullptr;
@@ -87,6 +102,7 @@ namespace buildkit {
       }
     }
   }
+
   char *build(const char *, int, char **argv)
   {
     impl::check_and_set_spec(std::string(*argv));
@@ -99,17 +115,34 @@ namespace buildkit {
     if (!folly::readFile(full_path.data(), tweak_source_code)) {
       exit(-1);
     }
-    std::cout << tweak_source_code << std::endl;
+
+    using boost::spirit::ascii::space;
+
+    // Class hook grammar
+
+    std::string::const_iterator
+      iter = std::begin(tweak_source_code),
+      end = std::end(tweak_source_code);
+
+    class_hook_parser g;
+    logos::class_hook emp;
+    bool r = phrase_parse(iter, end, g, space, emp);
+    if (r) {
+      std::cout << "Got: " << boost::fusion::as_vector(emp) << std::endl;
+    }
+    else std::cout << "Soemthing isn't working up";
+
+    // std::cout << tweak_source_code << std::endl;
     return NULL;
   }
 
-  char *package(const char *func_name, int argc, char **argv)
+  char *package(const char *, int, char **argv)
   {
     impl::check_and_set_spec(std::string(*argv));
     return NULL;
   }
 
-  char *deploy(const char *func_name, int argc, char **argv)
+  char *deploy(const char *, int, char **argv)
   {
     impl::check_and_set_spec(std::string(*argv));
     return NULL;
