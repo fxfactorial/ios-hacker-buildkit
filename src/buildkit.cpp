@@ -90,6 +90,16 @@ namespace buildkit {
   char *build(const char *, int, char **argv)
   {
     impl::check_and_set_spec(std::string(*argv));
+    std::string tweak_source_code;
+    std::string full_path =
+      folly::sformat("{}/{}",
+		     impl::getcwd_string(),
+		     impl::project_spec["tweak"]);
+
+    if (!folly::readFile(full_path.data(), tweak_source_code)) {
+      exit(-1);
+    }
+    std::cout << tweak_source_code << std::endl;
     return NULL;
   }
 
