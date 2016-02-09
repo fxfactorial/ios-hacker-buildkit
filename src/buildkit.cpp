@@ -1,3 +1,5 @@
+//uncomment to get parsing dump
+//#define BOOST_SPIRIT_DEBUG
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -37,29 +39,31 @@ namespace logos
     {
       using qi::int_;
       using qi::lit;
+      using qi::on_error;
+      using qi::fail;
       using qi::double_;
       using qi::lexeme;
       using ascii::char_;
 
-      // Need to do a *(method_parse rule)
-      // quoted_string %= lexeme['"' >> +(char_ - '"') >> '"'];
-      hooked_class %= lexeme[+(char_("a-zA-Z") - '-')];
-      method_sig %= lexeme[+(char_) - '{'];
-      method_body %= lexeme[+(char_ - '}')];
+      hooked_class = +char_("a-zA-Z");
+      method_sig = +(char_ - '{');
+      method_body = '{' >> +(char_ - '}') >> '}';
 
-      start %=
-	lit("%hook")
-	>> hooked_class
-	>> method_sig
-	>> '{'
-	>> method_body
-	>> lit("%end")
-	;
+      start =
+	"%hook"
+      	>> hooked_class
+      	>> method_sig
+      	>> method_body
+      	>> "%end" ;
 
+      on_error<fail> (start,
+		      boost::phoenix::ref(std::cout)
+		      << "Something errored!\n");
+      BOOST_SPIRIT_DEBUG_NODES((hooked_class)(method_sig)(method_body)(start))
     }
-    qi::rule<Iterator, std::string(), ascii::space_type> hooked_class;
-    qi::rule<Iterator, std::string(), ascii::space_type> method_sig;
-    qi::rule<Iterator, std::string(), ascii::space_type> method_body;
+
+  private:
+    qi::rule<Iterator, std::string()> hooked_class, method_sig, method_body;
     qi::rule<Iterator, class_hook(), ascii::space_type> start;
 
   };
@@ -117,9 +121,6 @@ namespace buildkit {
     }
 
     using boost::spirit::ascii::space;
-
-    // Class hook grammar
-
     std::string::const_iterator
       iter = std::begin(tweak_source_code),
       end = std::end(tweak_source_code);
@@ -130,7 +131,7 @@ namespace buildkit {
     if (r) {
       std::cout << "Got: " << boost::fusion::as_vector(emp) << std::endl;
     }
-    else std::cout << "Soemthing isn't working up";
+    else std::cout << "Soemthing isn't working up" << std::endl;
 
     // std::cout << tweak_source_code << std::endl;
     return NULL;
