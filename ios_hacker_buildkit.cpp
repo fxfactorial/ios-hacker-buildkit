@@ -18,34 +18,20 @@ std::string getcwd_string(void)
    return cwd;
 }
 
-class Project_builder {
+class Spec {
 private:
+  folly::dynamic project_spec = nullptr;
+};
 
-public:
-  Project_builder(const std::string package_json_path)
-  {
-
-  }
-
-  void make_merlin_file()
-  {
-
-  }
-
-  void make_opam_file()
-  {
-
-  }
+class Builder : Spec {
 
 };
 
-class Code_builder {
+class Packager : Spec {
 
-public:
-  Code_builder(const std::string package_json_path)
-  {
+};
 
-  }
+class Deployer : Spec {
 
 };
 
@@ -55,28 +41,31 @@ extern "C" {
 
   int plugin_is_GPL_compatible;
 
-  char *generate_project(const char *func_name, int argc, char **argv)
+  // We give back null to each of these because they are just for side
+  // effects
+  char *build(const char *func_name, int argc, char **argv)
   {
-    std::string package_json(*argv);
-    std::unique_ptr<Project_builder> builder(new Project_builder(package_json));
-    std::cout << "Hello World from C++" << std::endl;
+    std::cout << "Called build function\n";
     return NULL;
   }
 
-  char *build_project(const char *func_name, int argc, char **argv)
+  char *package(const char *func_name, int argc, char **argv)
   {
-    std::string package_json(*argv);
-    std::unique_ptr<Code_builder> builder(new Code_builder(package_json));
+    std::cout << "Called package function\n";
+    return NULL;
+  }
 
+  char *deploy(const char *func_name, int argc, char **argv)
+  {
+    std::cout << "Called deploy function\n";
     return NULL;
   }
 
   int buildkit_gmk_setup()
   {
-    gmk_add_function("build_code",
-		     (gmk_func_ptr)generate_project, 1, (unsigned int)1, 1);
-    /*     gmk_add_function("build_project",
-	   (gmk_func_ptr)build_project, 1, (unsigned int)1, 1); */
+    gmk_add_function("tweak_builder", (gmk_func_ptr)build, 1, 1, 0);
+    gmk_add_function("tweak_package", (gmk_func_ptr)package, 1, 1, 0);
+    gmk_add_function("tweak_deploy", (gmk_func_ptr)deploy, 1, 1, 0);
     return 1;
   }
 

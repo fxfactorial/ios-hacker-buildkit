@@ -1,4 +1,6 @@
 load ../buildkit.so
 
 all:
-	${build_code 123}
+	${tweak_builder ./package.json}
+	${tweak_package ./package.json}
+	${tweak_deploy ./package.json}
