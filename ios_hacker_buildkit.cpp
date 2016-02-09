@@ -10,30 +10,30 @@
 #include <folly/Format.h>
 #include <folly/FileUtil.h>
 
+folly::dynamic project_spec = nullptr;
+
 std::string getcwd_string(void)
 {
-   char buff[PATH_MAX];
-   getcwd(buff, PATH_MAX);
-   std::string cwd(buff);
-   return cwd;
+  char buff[PATH_MAX];
+  getcwd(buff, PATH_MAX);
+  std::string cwd(buff);
+  return cwd;
 }
 
-class Spec {
-private:
-  folly::dynamic project_spec = nullptr;
-};
+void check_and_set_spec(const std::string project_path)
+{
+  if (project_spec == nullptr) {
 
-class Builder : Spec {
+    std::string load_pkg_desc;
+    std::string full_path =
+      folly::sformat("{}/{}", getcwd_string(), project_path);
 
-};
-
-class Packager : Spec {
-
-};
-
-class Deployer : Spec {
-
-};
+    if (!folly::readFile(full_path.data(), load_pkg_desc)) {
+      exit(-1);
+    }
+    project_spec = folly::parseJson(load_pkg_desc);
+  }
+}
 
 extern "C" {
 
@@ -45,19 +45,19 @@ extern "C" {
   // effects
   char *build(const char *func_name, int argc, char **argv)
   {
-    std::cout << "Called build function\n";
+    check_and_set_spec(std::string(*argv));
     return NULL;
   }
 
   char *package(const char *func_name, int argc, char **argv)
   {
-    std::cout << "Called package function\n";
+    check_and_set_spec(std::string(*argv));
     return NULL;
   }
 
   char *deploy(const char *func_name, int argc, char **argv)
   {
-    std::cout << "Called deploy function\n";
+    check_and_set_spec(std::string(*argv));
     return NULL;
   }
 

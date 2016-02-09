@@ -1,0 +1,8 @@
+{
+    "name":"simple_tweak",
+    "author":"Edgar Aroutiounian",
+    "tweak":"tweak.xm",
+    "arch":"armv7",
+    "sdk":"9.2",
+    "compiler":"arm-apple-darwin11-clang"
+}
