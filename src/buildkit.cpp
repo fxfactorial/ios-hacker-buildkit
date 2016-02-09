@@ -10,6 +10,10 @@
 #include <folly/Format.h>
 #include <folly/FileUtil.h>
 
+#include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+
 folly::dynamic project_spec = nullptr;
 
 std::string getcwd_string(void)
@@ -35,6 +39,30 @@ void check_and_set_spec(const std::string project_path)
   }
 }
 
+namespace logos
+{
+  namespace qi = boost::spirit::qi;
+  namespace ascii = boost::spirit::ascii;
+
+  struct directives_ : qi::symbols<char, std::string>
+  {
+    directives_()
+    {
+      add
+	("C"    , "1234")
+	("CM"   , "1235")
+	("CM"   , "1235")
+
+	;
+    }
+
+  } directives;
+}
+
+
+
+// And now we talk to Make
+
 extern "C" {
 
 #include <gnumake.h>
@@ -43,7 +71,7 @@ extern "C" {
 
   // We give back null to each of these because they are just for side
   // effects
-  char *build(const char *func_name, int argc, char **argv)
+  char *build(const char *, int, char **argv)
   {
     check_and_set_spec(std::string(*argv));
     return NULL;
