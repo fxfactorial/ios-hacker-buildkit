@@ -9,6 +9,8 @@ else
   flags := -shared -undefined dynamic_lookup -fPIC -std=c++11
 endif
 
+flags += -Wformat -Werror=format-security \
+	-Werror=array-bounds -Wall -Werror -Wextra
 libs := -lc++ -lfolly
 src := src/buildkit.cpp
 lib := buildkit.so
