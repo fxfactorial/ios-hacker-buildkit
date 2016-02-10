@@ -28,6 +28,7 @@ namespace logos
   namespace qi = boost::spirit::qi;
   namespace ascii = boost::spirit::ascii;
 
+  // This needs to be generalized so that there is a vector of methods
   struct class_hook
   {
     std::string class_name;
@@ -109,7 +110,7 @@ namespace buildkit {
       }
     }
 
-    bool do_preprocess(std::vector<logos::class_hook> )
+    bool do_preprocess(std::vector<logos::class_hook> parsed)
     {
       std::ofstream logos_processed;
 
@@ -132,11 +133,10 @@ namespace buildkit {
       logos_processed.open(f_path, std::ios::out);
 
       logos_processed << R"(#include <substrate.h>)" << "\n";
-      // std::cout << chopped[0] << "\t" << chopped[1] << std::endl;
 
-      // for (const auto handle : parsed) {
-      // 	handle.class_name ;
-      // }
+      for (const auto handle : parsed) {
+      	logos_processed << "@class " << handle.class_name << ";\n";
+      }
       logos_processed.close();
       return true;
     }
