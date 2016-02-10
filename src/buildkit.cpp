@@ -11,7 +11,10 @@
 
 #include <folly/Format.h>
 #include <folly/FileUtil.h>
+#include <folly/FBString.h>
+#include <folly/Conv.h>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -105,12 +108,51 @@ namespace buildkit {
 	project_spec = folly::parseJson(load_pkg_desc);
       }
     }
+
+    bool do_preprocess(std::vector<logos::class_hook> )
+    {
+      std::ofstream logos_processed;
+
+      std::string the_tweak =
+	folly::to<std::string>(project_spec["tweak"].asString());
+
+      std::vector <std::string> chopped;
+      boost::split(chopped,
+		   the_tweak,
+		   std::bind1st(std::equal_to<char>(), '.'));
+
+      // This needs to be a nice switch kind of thing, or perhaps need
+      // to create an enum as well for a trivial ADT.
+      // if (chopped[1] == "xm")
+      //   std::cout << "Did get a xm extension\n";
+
+      std::string f_path =
+      	folly::sformat("{}/{}.{}", getcwd_string (), chopped[0], "mm");
+
+      logos_processed.open(f_path, std::ios::out);
+
+      logos_processed << R"(#include <substrate.h>)" << "\n";
+      // std::cout << chopped[0] << "\t" << chopped[1] << std::endl;
+
+      // for (const auto handle : parsed) {
+      // 	handle.class_name ;
+      // }
+      logos_processed.close();
+      return true;
+    }
+
   }
 
   char *build(const char *, int, char **argv)
   {
     impl::check_and_set_spec(std::string(*argv));
+
+    using boost::spirit::ascii::space;
+    class_hook_parser g;
     std::string tweak_source_code;
+    logos::class_hook hook;
+    std::vector<logos::class_hook> parsed;
+
     std::string full_path =
       folly::sformat("{}/{}",
 		     impl::getcwd_string(),
@@ -120,20 +162,18 @@ namespace buildkit {
       exit(-1);
     }
 
-    using boost::spirit::ascii::space;
     std::string::const_iterator
       iter = std::begin(tweak_source_code),
       end = std::end(tweak_source_code);
 
-    class_hook_parser g;
-    logos::class_hook emp;
-    bool r = phrase_parse(iter, end, g, space, emp);
+    bool r = phrase_parse(iter, end, g, space, hook);
     if (r) {
-      std::cout << "Got: " << boost::fusion::as_vector(emp) << std::endl;
+      parsed.push_back(hook);
+      impl::do_preprocess(parsed);
     }
-    else std::cout << "Soemthing isn't working up" << std::endl;
-
-    // std::cout << tweak_source_code << std::endl;
+    else {
+      std::cout << "Soemthing isn't working" << std::endl;
+    }
     return NULL;
   }
 
